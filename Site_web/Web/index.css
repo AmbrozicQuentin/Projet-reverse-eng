@@ -6,6 +6,8 @@ body {
   padding: 0;
   font-family: 'Roboto', sans-serif;
   background: linear-gradient(135deg, #4c6ef5, #15aabf);
+  background-image: url(https://fr.digi.com/getattachment/Blog/post/The-Benefits-of-IoT-Real-World-Examples/vecteezy_8136210-1280.jpg?lang=en-US);
+  background-size: cover;
   color: #333;
   min-height: 100vh;
   display: flex;
