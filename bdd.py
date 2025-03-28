@@ -1,6 +1,7 @@
 from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from contextlib import asynccontextmanager
 
 class Badge(SQLModel, table=True):
     badge_id: int | None = Field(default=None, primary_key=True)
@@ -24,9 +25,15 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 app = FastAPI()
 
-@app.on_event("Startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code pour le démarrage de l'application
     create_db_and_tables()
+    yield  # Point où l'application démarre, elle continue à tourner ici
+    # Code pour l'arrêt de l'application (si nécessaire)
+    # Exemple : fermer des connexions, etc.
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/create")
 async def create_badge(badge: Badge, session: SessionDep) -> Badge:
@@ -42,11 +49,11 @@ async def check(badge_id: int, session: SessionDep) -> Badge:
         raise HTTPException(status_code=404, detail="Badge not found")
     return badge
 
-@app.delete("delete/{badge_id}")
+@app.delete("/delete/{badge_id}")
 async def delete_badge(badge_id: int, session: SessionDep):
     badge = session.get(Badge, badge_id)
     if not badge:
-        raise HTTPException(status_code=404, detail= "Hero not found")
+        raise HTTPException(status_code=404, detail="Badge not found")  # Correction ici
     session.delete(badge)
     session.commit()
     return {"ok": True}
