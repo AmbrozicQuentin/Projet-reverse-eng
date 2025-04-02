@@ -11,10 +11,6 @@
 #define SS_PIN         D4      // Configurable, see typical pin layout above
 #define GREEN_LED      D1
 #define RED_LED        D2
-#define admin          "E4 B1 E0 62" // A Effacer aprés le fonctionnement
-#define user           "D4 EF EC 62" // A Effacer aprés le fonctionnement
-#define ADMIN          "administrateur"
-#define USER           "unauthorized"
 
 
 #define API_CHECK      "https://guardia-api.iadjedj.ovh/check_badge?badge_id="
@@ -59,8 +55,9 @@ void setup() {
 
   pinMode(GREEN_LED, OUTPUT);
   pinMode(RED_LED, OUTPUT);
-  digitalWrite(RED_LED, 1);
+
 }
+
 
 
 void POST() {
@@ -71,7 +68,7 @@ void POST() {
   http.begin(URL_T);
   http.addHeader( "Accept", "application/json");
   http.addHeader("Content-type", "application/x-www-form-urlencoded");
-  String bodyPoste = "grant_type=password&username=" USER_API "&password=" PASSWD_API;
+  String bodyPoste = String("grant_type=password&username=") + String(USER_API) + "&password=" + String(PASSWD_API);
   int httpRep = http.POST(bodyPoste); // envoie reponse 
   String response = http.getString();
   if (httpRep > 0){
@@ -171,11 +168,39 @@ void check_api(){
   delay(100);
 }
 
+void autorizade_user(){
+  delay(1000);
+  digitalWrite(GREEN_LED, 1);
+  digitalWrite(RED_LED, 0);
+  delay(2000);
+  digitalWrite(GREEN_LED, 0);
+}
 
+void autorizade_admin(){
+delay(1000);
+digitalWrite(GREEN_LED, 1);
+digitalWrite(RED_LED, 1);
+delay(2000);
+digitalWrite(GREEN_LED, 0);
+}
 
+void not_autorizade(){
+  delay(1000);
+  digitalWrite(RED_LED, 1 );
+  delay (500);
+  digitalWrite(RED_LED, 0 );
+  delay(500);
+  digitalWrite(RED_LED, 1 );
+  delay(500);
+  digitalWrite(RED_LED, 0 );
+  Serial.print("the acces for bedent beceause is close");
+  delay(1000);
+
+}
 
 void loop() {
   digitalWrite(RED_LED,1);
+  
   unsigned long timecarte = millis();
   struct  tm timeinfo;
 
@@ -186,7 +211,7 @@ void loop() {
   }
 
 
-  if (timecarte - stockagetimecarte >= 60000 ){
+  if (timecarte - stockagetimecarte >= 3600000 ){
   Serial.println(&timeinfo, "%H :%M :%S");
   stockagetimecarte= timecarte;
   }
@@ -203,9 +228,9 @@ void loop() {
 
 
 
+ //  
 
-  if ( hour_check > 9 && hour_check < 18){
-    if(timecarte - stockagetimecarte >= 60000 || token == "" ){
+  if(timecarte - stockagetimecarte >= 3600000  || compteur == 0 ){
     Serial.println("Token Demande");
     POST();
     stockagetimecarte = timecarte;
@@ -213,65 +238,36 @@ void loop() {
     Serial.print("token in the loop:"); Serial.println(token);
     compteur += 1;
     Serial.println(compteur);
-    }
-    Serial.print("the acces for bedent beceause is close");
-    delay(1000);
   }
-
-
-
 
  
   // Reset the loop if no new card present on the sensor/reader. This saves the entire process when idle.
-  if ( hour_check > 9 && hour_check < 18){
-    if ( ! mfrc522.PICC_IsNewCardPresent() ||  hour_check < 9 && hour_check > 18) {
-      return;
-    }
-
-
-    // Select one of the cards
-    if ( ! mfrc522.PICC_ReadCardSerial() || hour_check < 9 && hour_check > 18) {
-      return;
-    }
-
-
-
-
-    check_api();
-
-
-
-
-
-
-
-
-    if(level == ADMIN){
-      delay(1000);
-      digitalWrite(GREEN_LED, 1);
-      digitalWrite(RED_LED, 1);
-      delay(3000);
-      digitalWrite(GREEN_LED, 0);
-      digitalWrite(RED_LED, 0) ;
-    }
-    else if (level == USER){
-      delay(1000);
-      digitalWrite(GREEN_LED, 1);
-      digitalWrite(RED_LED, 0);
-      delay(4000);
-      digitalWrite(GREEN_LED, 0);
-    }
-    else{
-      delay(1000);
-      digitalWrite(GREEN_LED,0);
-      digitalWrite(RED_LED, 1 );
-    }
+  if ( ! mfrc522.PICC_IsNewCardPresent()) {
+    return;
   }
 
 
-  // Dump debug info about the card; PICC_HaltA() is automatically called
+    // Select one of the cards
+  if ( ! mfrc522.PICC_ReadCardSerial()) {
+    return;
+  }
+
+    check_api();
+
+  if(level == ADMIN){
+    autorizade_admin();
+  }
+  if (hour_check > 8 && hour_check < 18 && level == USER){
+    autorizade_user();
+  }
+  else{
+    not_autorizade();
+  }
 }
 
 
+
+
+  // Dump debug info about the card; PICC_HaltA() is automatically called
 
 
